@@ -5,6 +5,10 @@
   import { showToast } from "$lib/stores/toast";
   import { goto } from "$app/navigation";
 
+  import { API_BASE } from "$lib/api/config.js";
+
+  const GOOGLE_LOGIN_URL = `${API_BASE}/auth/google`;
+
   const dispatch = createEventDispatcher();
   let email = "";
   let password = "";
@@ -58,7 +62,7 @@
         <button class="btn btn-danger" on:click={submit}> Login </button>
         <hr />
 
-        <a href="http://localhost:3000/api/auth/google" class="w-100 mb-2">
+        <a href={GOOGLE_LOGIN_URL} class="w-100 mb-2">
           <button
             type="button"
             class="btn btn-google d-flex align-items-center justify-content-center w-100"

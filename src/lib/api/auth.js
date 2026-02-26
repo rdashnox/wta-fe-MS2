@@ -1,4 +1,4 @@
-import { API_BASE } from '$lib/api/config.js';
+import { API_BASE } from "$lib/api/config.js";
 
 const API_URL = `${API_BASE}/auth`;
 

@@ -117,7 +117,7 @@
             {#if accountOpen}
               <ul class="dropdown-menu dropdown-menu-end show">
                 <li>
-                  <a class="dropdown-item" href="/account/profile"> Profile </a>
+                  <a class="dropdown-item" href="/profile"> Profile </a>
                 </li>
                 <li>
                   <a class="dropdown-item" href="/account/bookings">
@@ -197,7 +197,7 @@
           {#if accountOpen}
             <ul class="dropdown-menu show w-100 mt-2 position-static">
               <li>
-                <a class="dropdown-item" href="/account/profile"> Profile </a>
+                <a class="dropdown-item" href="/profile"> Profile </a>
               </li>
               <li>
                 <a class="dropdown-item" href="/account/bookings">
