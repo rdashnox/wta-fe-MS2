@@ -188,7 +188,10 @@
       >
         <div class="modal-body px-4">
           <div class="mb-3">
-            <label for="modal-newsletter-email" class="form-label visually-hidden">
+            <label
+              for="modal-newsletter-email"
+              class="form-label visually-hidden"
+            >
               Email address
             </label>
             <input
@@ -205,17 +208,18 @@
           </div>
         </div>
 
-        <div class="modal-footer d-flex justify-content-between border-0 px-4 pb-4">
+        <div
+          class="modal-footer d-flex justify-content-between border-0 px-4 pb-4"
+        >
           <button
             type="button"
             class="btn btn-outline-secondary modal-newsletter__btn-no"
             id="modal-no-thanks-btn"
-            on:click={handleNoThanks}
           >
             No Thanks
           </button>
-          <button type="submit" class="btn btn-danger fw-bold w-50" disabled={loading}>
-            {loading ? 'Subscribing...' : 'Subscribe'}
+          <button type="submit" class="btn btn-danger fw-bold w-50">
+            Subscribe
           </button>
         </div>
       </form>
