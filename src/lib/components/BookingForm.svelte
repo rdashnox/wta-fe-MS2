@@ -6,9 +6,9 @@
   import { getWeatherRange } from "$lib/services/weather";
   import WeatherModal from "$lib/components/WeatherModal.svelte";
   import { bookingSchema } from "$lib/utils/validationSchemas";
-  import { writable } from "svelte/store"; 
-    
+  import { writable } from "svelte/store";
   import { get } from "svelte/store";
+  import { goto } from "$app/navigation";
 
   export let roomId;
   export let roomName;
@@ -176,9 +176,10 @@
     try {
       const res = await createBooking(bookingData);
 
-      if (res?.success) {
+      if (res) { // Changed from res?.success
         showToast("Booking successful 🎉", "success");
         dispatch("close");
+        await goto("/my-bookings", { invalidateAll: true }); // Redirect to my-bookings page
       } else {
         const errorMessage = res?.message || "Booking failed. Please try again.";
         showToast(errorMessage, "error")        
