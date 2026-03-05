@@ -42,7 +42,7 @@ declare module "$app/types" {
 			"/profile": Record<string, never>;
 			"/suites": Record<string, never>
 		};
-		Pathname(): "/" | "/access" | "/access/" | "/admin" | "/admin/" | "/dining" | "/dining/" | "/experience" | "/experience/" | "/my-bookings" | "/my-bookings/" | "/oauth-success" | "/oauth-success/" | "/profile" | "/profile/" | "/suites" | "/suites/";
+		Pathname(): "/" | "/access" | "/admin" | "/dining" | "/experience" | "/my-bookings" | "/oauth-success" | "/profile" | "/suites";
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
 		Asset(): "/images/logo.png" | "/robots.txt" | string & {};
 	}

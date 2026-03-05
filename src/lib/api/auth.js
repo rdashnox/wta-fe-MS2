@@ -1,4 +1,5 @@
 import { API_BASE } from "$lib/api/config.js";
+import { user, accessToken, authUpdated } from "$lib/stores/auth"; // Import stores
 
 const API_URL = `${API_BASE}/auth`;
 
@@ -31,6 +32,8 @@ export async function register(email, password) {
 }
 
 export async function logout() {
-  // optional backend call
+  user.set(null);
+  accessToken.set(null);
+  authUpdated.update(n => n + 1); // Trigger TopNav update
   return Promise.resolve();
 }
