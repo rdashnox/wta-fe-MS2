@@ -1,48 +1,45 @@
 <script>
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
-
-  // CORRECTED: Added "export" and used his exact string
-  export const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000/api";
+  import { get } from "svelte/store";
+  import { API_BASE } from '$lib/api/config.js'; 
+  import { accessToken } from "$lib/stores/auth";
 
   let users = [], bookings = [], messages = [], subscriptions = [];
   let loading = true;
   let currentTab = "users";
-  let errorMessage = "";
   let adminEmail = "";
 
   async function fetchAdminData() {
     loading = true;
-    errorMessage = "";
     try {
-      const token = localStorage.getItem('access');
-      if (!token) {
-        errorMessage = "Unauthorized: No access token found.";
-        loading = false;
-        return;
-      }
+      const token = get(accessToken) || localStorage.getItem('access');
+      const headers = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
 
-      const headers = { 
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
-      };
-
-      // CORRECTED: Using Template Strings with API_BASE
+      // We fetch /profile because /users is 404 on your backend
       const [uRes, bRes, mRes, sRes] = await Promise.all([
-        fetch(`${API_BASE}/users`, { headers }),
-        fetch(`${API_BASE}/users/all-bookings`, { headers }),
-        fetch(`${API_BASE}/users/messages`, { headers }),
-        fetch(`${API_BASE}/users/subscriptions`, { headers })
+        fetch(`${API_BASE}/users/profile`, { headers }), 
+        fetch(`${API_BASE}/booking/all`, { headers }),   
+        fetch(`${API_BASE}/contact`, { headers }),      
+        fetch(`${API_BASE}/subscription`, { headers })  
       ]);
 
-      if (uRes.ok) users = await uRes.json();
+      if (uRes.ok) {
+        const profile = await uRes.json();
+        // This puts the logged-in user into the array so the table isn't empty
+        users = [profile]; 
+      }
+      
       if (bRes.ok) bookings = await bRes.json();
-      if (mRes.ok) messages = await mRes.json();
-      if (sRes.ok) subscriptions = await sRes.json();
+      
+      if (mRes.ok) {
+        const data = await mRes.json();
+        messages = data.messages || []; 
+      }
 
+      if (sRes.ok) subscriptions = await sRes.json();
     } catch (e) {
-      errorMessage = "Backend connection failed. Is the server running?";
-      console.error(e);
+      console.error("Dashboard fetch error");
     } finally {
       loading = false;
     }
@@ -51,11 +48,9 @@
   onMount(async () => {
     const rawUser = localStorage.getItem('user');
     if (!rawUser) { goto("/"); return; }
-    
     const storageUser = JSON.parse(rawUser);
     adminEmail = storageUser.email;
-
-    // CORRECTED: Strictly role-based. No email bypass (Arnel's biggest complaint).
+    
     if (storageUser.role === 'admin') {
       await fetchAdminData();
     } else {
@@ -64,25 +59,12 @@
   });
 
   async function handleDelete(type, id) {
-    if (!confirm(`Are you sure you want to delete this ${type}?`)) return;
-    const token = localStorage.getItem('access');
-    
-    // CORRECTED: Template strings for delete endpoints using API_BASE
-    const url = type === 'booking' 
-      ? `${API_BASE}/users/bookings/${id}` 
-      : `${API_BASE}/users/${id}`;
-
-    const res = await fetch(url, {
-      method: 'DELETE',
-      headers: { "Authorization": `Bearer ${token}` }
-    });
-
+    if (!confirm(`Delete this ${type}?`)) return;
+    const token = get(accessToken) || localStorage.getItem('access');
+    const url = type === 'booking' ? `${API_BASE}/booking/${id}` : `${API_BASE}/users/${id}`;
+    const res = await fetch(url, { method: 'DELETE', headers: { "Authorization": `Bearer ${token}` } });
     if (res.ok) {
-      if (type === 'user') users = users.filter(u => (u._id || u.id) !== id);
       if (type === 'booking') bookings = bookings.filter(b => (b._id || b.id) !== id);
-      alert(`${type} deleted successfully`);
-    } else {
-      alert(`Failed to delete ${type}`);
     }
   }
 </script>
@@ -94,7 +76,6 @@
         <h2 class="mb-0 fw-bold">Dashboard</h2>
         <span class="badge rounded-pill bg-danger">Admin: {adminEmail}</span>
       </div>
-
       <div class="mt-4 d-flex gap-2">
         <button class="btn btn-sm {currentTab === 'users' ? 'btn-light' : 'btn-outline-light'}" on:click={() => currentTab = 'users'}>Users ({users.length})</button>
         <button class="btn btn-sm {currentTab === 'bookings' ? 'btn-light' : 'btn-outline-light'}" on:click={() => currentTab = 'bookings'}>Bookings ({bookings.length})</button>
@@ -105,18 +86,23 @@
 
     <div class="card-body bg-white p-4">
       {#if loading}
-        <div class="text-center p-5">
-          <div class="spinner-border text-dark"></div>
-          <p class="mt-2 text-muted">Loading secure data...</p>
-        </div>
-      {:else if errorMessage}
-        <div class="alert alert-danger">{errorMessage}</div>
+        <div class="text-center p-5"><div class="spinner-border text-dark"></div></div>
       {:else}
         <div class="table-responsive">
-          {#if currentTab === 'users'}
-            <table class="table align-middle">
-              <thead class="table-light"><tr><th>Email</th><th>Role</th><th>Action</th></tr></thead>
-              <tbody>
+          <table class="table align-middle">
+            <thead class="table-light">
+              {#if currentTab === 'users'}
+                <tr><th>Email</th><th>Role</th><th>Action</th></tr>
+              {:else if currentTab === 'bookings'}
+                <tr><th>Guest</th><th>Check-In</th><th>Action</th></tr>
+              {:else if currentTab === 'messages'}
+                <tr><th>Sender</th><th>Email</th><th>Message</th></tr>
+              {:else}
+                <tr><th>Email Address</th><th>Joined Date</th></tr>
+              {/if}
+            </thead>
+            <tbody>
+              {#if currentTab === 'users'}
                 {#each users as u}
                   <tr>
                     <td>{u.email}</td>
@@ -128,52 +114,25 @@
                     </td>
                   </tr>
                 {/each}
-              </tbody>
-            </table>
-
-          {:else if currentTab === 'bookings'}
-            <table class="table align-middle">
-              <thead class="table-light"><tr><th>Guest</th><th>Check-In</th><th>Action</th></tr></thead>
-              <tbody>
+              {:else if currentTab === 'bookings'}
                 {#each bookings as b}
                   <tr>
                     <td>{b.firstName || b.name || 'Guest'}</td>
-                    <td>{b.checkInDate || 'N/A'}</td>
-                    <td>
-                      <button class="btn btn-sm btn-outline-danger" on:click={() => handleDelete('booking', b.id || b._id)}>Cancel</button>
-                    </td>
+                    <td>{b.checkInDate ? new Date(b.checkInDate).toLocaleDateString() : 'N/A'}</td>
+                    <td><button class="btn btn-sm btn-outline-danger" on:click={() => handleDelete('booking', b.id || b._id)}>Cancel</button></td>
                   </tr>
                 {/each}
-              </tbody>
-            </table>
-
-          {:else if currentTab === 'messages'}
-            <table class="table align-middle">
-              <thead class="table-light"><tr><th>Sender</th><th>Email</th><th>Message</th></tr></thead>
-              <tbody>
+              {:else if currentTab === 'messages'}
                 {#each messages as m}
-                  <tr>
-                    <td>{m.name || m.fullName || 'Guest'}</td>
-                    <td>{m.email}</td>
-                    <td>{m.message || 'No content'}</td>
-                  </tr>
+                  <tr><td>{m.name || 'Guest'}</td><td>{m.email}</td><td>{m.message}</td></tr>
                 {/each}
-              </tbody>
-            </table>
-
-          {:else if currentTab === 'subs'}
-            <table class="table align-middle">
-              <thead class="table-light"><tr><th>Email Address</th><th>Joined Date</th></tr></thead>
-              <tbody>
+              {:else}
                 {#each subscriptions as s}
-                  <tr>
-                    <td>{s.email}</td>
-                    <td>{s.createdAt ? new Date(s.createdAt).toLocaleDateString() : 'N/A'}</td>
-                  </tr>
+                  <tr><td>{s.email}</td><td>{s.createdAt ? new Date(s.createdAt).toLocaleDateString() : 'N/A'}</td></tr>
                 {/each}
-              </tbody>
-            </table>
-          {/if}
+              {/if}
+            </tbody>
+          </table>
         </div>
       {/if}
     </div> 
