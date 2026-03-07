@@ -1,174 +1,151 @@
-<svelte:head>
-  <title>Home | Skye Suites</title>
-</svelte:head>
+<script>
+  import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
+  import { get } from "svelte/store";
+  import { API_BASE } from '$lib/api/config.js'; 
+  import { accessToken, user } from "$lib/stores/auth";
+  import { showToast } from "$lib/stores/toast";
 
-<main class="index-main" id="main-content">
-  <section class="index-services" aria-label="Main services offered">
-    <div class="container index-services__container">
-      <!-- Bootstrap: Container -->
-      <div class="row g-4">
-        <!-- Bootstrap: Row-->
+  let users = [], bookings = [], messages = [], subscriptions = [];
+  let loading = true;
+  let currentTab = "users";
+  let adminEmail = "";
 
-        <div class="col-lg-6">
-          <!-- Bootstrap: Column-->
-          <article class="index-service-card">
-            <a href="/suites" data-page-id="suites">
-              <img
-                src="https://images.pexels.com/photos/31817162/pexels-photo-31817162.jpeg"
-                alt="Luxurious suites"
-                class="img-fluid index-service-card__image"
-                loading="lazy"
-              />
-              <div class="index-service-card__content">
-                <h2 class="index-service-card__title">Exquisite Suites</h2>
-                <p class="index-service-card__text">
-                  Experience elegant comfort with our beautifully designed
-                  suites, combining luxury with breathtaking views.
-                </p>
-              </div>
-            </a>
-          </article>
-        </div>
+  async function fetchAdminData() {
+    loading = true;
+    try {
+      const token = get(accessToken) || localStorage.getItem('access');
+      const headers = { 
+        "Authorization": `Bearer ${token}`, 
+        "Content-Type": "application/json" 
+      };
 
-        <div class="col-lg-6">
-          <!-- Bootstrap: Column-->
-          <article class="index-service-card">
-            <a href="/dining" data-page-id="dining">
-              <img
-                src="https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg"
-                alt="Dining experience"
-                class="index-service-card__image"
-                loading="lazy"
-              />
-              <div class="index-service-card__content">
-                <h2 class="index-service-card__title">Culinary Delights</h2>
-                <p class="index-service-card__text">
-                  Savor gourmet dishes crafted by our world-class chefs at our
-                  award-winning restaurants.
-                </p>
-              </div>
-            </a>
-          </article>
-        </div>
+      // FETCH FROM THE CORRECT ENDPOINTS
+      const [uRes, bRes, mRes, sRes] = await Promise.all([
+        fetch(`${API_BASE}/users`, { headers }), 
+        fetch(`${API_BASE}/booking/all`, { headers }),   
+        fetch(`${API_BASE}/contact`, { headers }),      
+        fetch(`${API_BASE}/subscription`, { headers })  
+      ]);
 
-        <div class="col-lg-6">
-          <!-- Bootstrap: Column-->
-          <article class="index-service-card">
-            <a href="/experience" data-page-id="experience">
-              <img
-                src="https://images.pexels.com/photos/6908362/pexels-photo-6908362.jpeg"
-                alt="Spa and wellness experience"
-                class="index-service-card__image"
-                loading="lazy"
-              />
-              <div class="index-service-card__content">
-                <h2 class="index-service-card__title">
-                  Unforgettable Experiences
-                </h2>
-                <p class="index-service-card__text">
-                  Relax and rejuvenate with exclusive spa treatments,
-                  adventures, and curated experiences.
-                </p>
-              </div>
-            </a>
-          </article>
-        </div>
-
-        <div class="col-lg-6">
-          <!-- Bootstrap: Column-->
-          <article class="index-service-card">
-            <a href="/access" data-page-id="access">
-              <img
-                src="https://images.pexels.com/photos/16253098/pexels-photo-16253098.jpeg"
-                alt="Hotel access location"
-                class="index-service-card__image"
-                loading="lazy"
-              />
-              <div class="index-service-card__content">
-                <h2 class="index-service-card__title">Seamless Access</h2>
-                <p class="index-service-card__text">
-                  Conveniently located with detailed directions and transport
-                  options, making your journey effortless.
-                </p>
-              </div>
-            </a>
-          </article>
-        </div>
-      </div>
-    </div>
-  </section>
-</main>
-
-<style>
-  /* Services Section */
-  .index-main {
-    max-width: 1200px;
-    margin: 3rem auto 5rem;
-    padding: 0 1.5rem;
-  }
-
-  .index-services__container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 3rem;
-  }
-
-  .index-service-card {
-    background-color: var(--color-bg-light);
-    border-radius: var(--border-radius);
-    box-shadow: 0 4px 20px rgb(0 0 0 / 0.1);
-    transition: box-shadow var(--transition);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .index-service-card:hover,
-  .index-service-card:focus-within {
-    box-shadow: 0 8px 30px rgb(230 57 70 / 0.3);
-  }
-
-  .index-service-card__image {
-    width: 100%;
-    height: 220px;
-    object-fit: cover;
-    display: block;
-    flex-shrink: 0;
-  }
-
-  .index-service-card__content {
-    padding: 1.5rem 1.5rem;
-    color: var(--color-text-dark);
-  }
-
-  .index-service-card__title {
-    font-size: clamp(1.25rem, 2vw, 1.5rem);
-    margin: 0 0 0.5rem;
-    font-weight: 700;
-    font-family: var(--font-family-serif);
-  }
-
-  .index-service-card__title {
-    color: var(--color-primary);
-    text-decoration: none;
-    transition: color var(--transition);
-  }
-
-  .index-service-card__title:hover,
-  .index-service-card__title:focus {
-    color: var(--color-primary-dark);
-    outline: none;
-  }
-
-  .index-service-card__text {
-    font-size: 1rem;
-    line-height: 1.6;
-  }
-
-  /* Responsive tweaks */
-  @media (max-width: 600px) {
-    .index-service-card__image {
-      height: 180px;
+      if (uRes.ok) {
+        const data = await uRes.json();
+        // ACCEPT THE FULL ARRAY
+        users = Array.isArray(data) ? data : [data]; 
+      }
+      
+      if (bRes.ok) bookings = await bRes.json();
+      if (mRes.ok) messages = await mRes.json();
+      if (sRes.ok) subscriptions = await sRes.json();
+      
+    } catch (e) {
+      console.error("Dashboard Sync Error:", e);
+    } finally {
+      loading = false;
     }
   }
-</style>
+
+  onMount(async () => {
+    const currentUser = get(user) || JSON.parse(localStorage.getItem('user'));
+    if (!currentUser || currentUser.role !== 'admin') {
+      goto("/");
+      return;
+    }
+    adminEmail = currentUser.email;
+    await fetchAdminData();
+  });
+
+  async function handleDelete(type, id) {
+    if (!confirm(`Are you sure you want to delete this ${type}?`)) return;
+    const token = get(accessToken) || localStorage.getItem('access');
+    
+    // TEMPLATE STRINGS FOR DELETE
+    const url = type === 'booking' 
+      ? `${API_BASE}/booking/${id}` 
+      : `${API_BASE}/users/${id}`;
+
+    const res = await fetch(url, { 
+      method: 'DELETE', 
+      headers: { "Authorization": `Bearer ${token}` } 
+    });
+
+    if (res.ok) {
+      if (type === 'booking') bookings = bookings.filter(b => (b._id || b.id) !== id);
+      if (type === 'user') users = users.filter(u => (u._id || u.id) !== id);
+      alert("Deleted successfully");
+    } else {
+      const err = await res.json();
+      alert(`Error: ${err.message}`);
+    }
+  }
+</script>
+
+<div class="container mt-5 mb-5">
+  <div class="card shadow border-0 overflow-hidden">
+    <div class="card-header p-4" style="background-color: #2c2c2c; color: white;">
+      <div class="d-flex justify-content-between align-items-center">
+        <h2 class="mb-0 fw-bold">Dashboard</h2>
+        <span class="badge rounded-pill bg-danger">Admin: {adminEmail}</span>
+      </div>
+      <div class="mt-4 d-flex gap-2">
+        <button class="btn btn-sm {currentTab === 'users' ? 'btn-light' : 'btn-outline-light'}" on:click={() => currentTab = 'users'}>Users ({users.length})</button>
+        <button class="btn btn-sm {currentTab === 'bookings' ? 'btn-light' : 'btn-outline-light'}" on:click={() => currentTab = 'bookings'}>Bookings ({bookings.length})</button>
+        <button class="btn btn-sm {currentTab === 'messages' ? 'btn-light' : 'btn-outline-light'}" on:click={() => currentTab = 'messages'}>Messages ({messages.length})</button>
+        <button class="btn btn-sm {currentTab === 'subs' ? 'btn-light' : 'btn-outline-light'}" on:click={() => currentTab = 'subs'}>Subscriptions ({subscriptions.length})</button>
+      </div>
+    </div>
+
+    <div class="card-body bg-white p-4">
+      {#if loading}
+        <div class="text-center p-5"><div class="spinner-border text-dark"></div></div>
+      {:else}
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead class="table-light">
+              {#if currentTab === 'users'}
+                <tr><th>Email</th><th>Role</th><th>Action</th></tr>
+              {:else if currentTab === 'bookings'}
+                <tr><th>Guest</th><th>Check-In</th><th>Action</th></tr>
+              {:else if currentTab === 'messages'}
+                <tr><th>Sender</th><th>Subject</th><th>Message</th></tr>
+              {:else}
+                <tr><th>Email Address</th><th>Joined Date</th></tr>
+              {/if}
+            </thead>
+            <tbody>
+              {#if currentTab === 'users'}
+                {#each users as u}
+                  <tr>
+                    <td>{u.email}</td>
+                    <td><span class="badge bg-dark">{u.role}</span></td>
+                    <td>
+                      {#if u.role !== 'admin'}
+                        <button class="btn btn-sm btn-outline-danger" on:click={() => handleDelete('user', u._id || u.id)}>Delete</button>
+                      {/if}
+                    </td>
+                  </tr>
+                {/each}
+              {:else if currentTab === 'bookings'}
+                {#each bookings as b}
+                  <tr>
+                    <td>{b.firstName || 'Guest'}</td>
+                    <td>{b.checkInDate ? new Date(b.checkInDate).toLocaleDateString() : 'N/A'}</td>
+                    <td><button class="btn btn-sm btn-outline-danger" on:click={() => handleDelete('booking', b._id || b.id)}>Cancel</button></td>
+                  </tr>
+                {/each}
+              {:else if currentTab === 'messages'}
+                {#each messages as m}
+                  <tr><td>{m.name}</td><td>{m.subject || 'No Subject'}</td><td>{m.message}</td></tr>
+                {/each}
+              {:else}
+                {#each subscriptions as s}
+                  <tr><td>{s.email}</td><td>{new Date(s.createdAt).toLocaleDateString()}</td></tr>
+                {/each}
+              {/if}
+            </tbody>
+          </table>
+        </div>
+      {/if}
+    </div> 
+  </div> 
+</div>

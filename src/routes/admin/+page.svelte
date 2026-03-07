@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import { get } from "svelte/store";
+  // CORRECT: Using the existing config and template strings as requested
   import { API_BASE } from '$lib/api/config.js'; 
   import { accessToken } from "$lib/stores/auth";
 
@@ -9,37 +10,44 @@
   let loading = true;
   let currentTab = "users";
   let adminEmail = "";
+  let errorMessage = "";
 
   async function fetchAdminData() {
     loading = true;
+    errorMessage = "";
     try {
       const token = get(accessToken) || localStorage.getItem('access');
-      const headers = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
+      const headers = { 
+        "Authorization": `Bearer ${token}`, 
+        "Content-Type": "application/json" 
+      };
 
-      // We fetch /profile because /users is 404 on your backend
+      // FIXED URLS: Points to the new GET /api/users route to show all accounts
       const [uRes, bRes, mRes, sRes] = await Promise.all([
-        fetch(`${API_BASE}/users/profile`, { headers }), 
+        fetch(`${API_BASE}/users`, { headers }), 
         fetch(`${API_BASE}/booking/all`, { headers }),   
         fetch(`${API_BASE}/contact`, { headers }),      
         fetch(`${API_BASE}/subscription`, { headers })  
       ]);
 
       if (uRes.ok) {
-        const profile = await uRes.json();
-        // This puts the logged-in user into the array so the table isn't empty
-        users = [profile]; 
+        const data = await uRes.json();
+        // SUCCESS: Accepting the array of all registered users
+        users = Array.isArray(data) ? data : [data]; 
       }
       
       if (bRes.ok) bookings = await bRes.json();
       
       if (mRes.ok) {
         const data = await mRes.json();
-        messages = data.messages || []; 
+        messages = data.messages || data; 
       }
 
       if (sRes.ok) subscriptions = await sRes.json();
+      
     } catch (e) {
-      console.error("Dashboard fetch error");
+      errorMessage = "Backend connection failed. Is the server running?";
+      console.error("Fetch Error:", e);
     } finally {
       loading = false;
     }
@@ -59,12 +67,22 @@
   });
 
   async function handleDelete(type, id) {
-    if (!confirm(`Delete this ${type}?`)) return;
+    if (!confirm(`Are you sure you want to delete this ${type}?`)) return;
     const token = get(accessToken) || localStorage.getItem('access');
-    const url = type === 'booking' ? `${API_BASE}/booking/${id}` : `${API_BASE}/users/${id}`;
-    const res = await fetch(url, { method: 'DELETE', headers: { "Authorization": `Bearer ${token}` } });
+    
+    // CORRECTED: Template strings for delete endpoints using API_BASE
+    const url = type === 'booking' 
+      ? `${API_BASE}/booking/${id}` 
+      : `${API_BASE}/users/${id}`;
+
+    const res = await fetch(url, { 
+      method: 'DELETE', 
+      headers: { "Authorization": `Bearer ${token}` } 
+    });
+
     if (res.ok) {
       if (type === 'booking') bookings = bookings.filter(b => (b._id || b.id) !== id);
+      if (type === 'user') users = users.filter(u => (u._id || u.id) !== id);
     }
   }
 </script>
@@ -88,6 +106,10 @@
       {#if loading}
         <div class="text-center p-5"><div class="spinner-border text-dark"></div></div>
       {:else}
+        {#if errorMessage}
+          <div class="alert alert-warning">{errorMessage}</div>
+        {/if}
+
         <div class="table-responsive">
           <table class="table align-middle">
             <thead class="table-light">
