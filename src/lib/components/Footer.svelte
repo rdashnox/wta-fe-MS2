@@ -1,20 +1,20 @@
 <script>
-  import { API_BASE } from '$lib/api/config.js';
-  import { showToast } from '$lib/stores/toast.js';
+  import { API_BASE } from "$lib/api/config";
+  import { showToast } from "$lib/stores/toast";
+  import { fetchAdminData } from "$lib/utils/admin";
 
   let loading = false;
-  let email = '';
-  let emailError = '';
+  let email = "";
+  let emailError = "";
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   function validateEmail(value) {
-
     if (!value) {
-      emailError = '';
+      emailError = "";
     } else if (!emailRegex.test(value)) {
-      emailError = 'Please enter a valid email.';
+      emailError = "Please enter a valid email.";
     } else {
-      emailError = '';
+      emailError = "";
     }
   }
 
@@ -35,33 +35,40 @@
 
     try {
       const response = await fetch(`${API_BASE}/subscription/subscribe`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email: email.trim(),
-        }),
+        body: JSON.stringify({ email: email.trim() }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        showToast(errorData.message || 'Failed to subscribe.', 'error');
+        showToast(errorData.message || "Failed to subscribe.", "error");
         return;
       }
 
       const result = await response.json();
-      showToast('Successfully subscribed!', 'success');
-      email = '';
+      showToast("Successfully subscribed!", "success");
+      email = "";
+
+      try {
+        const data = await fetchAdminData();
+        // Reload admin dashboard if open
+        if (window.$reloadAdminDashboards) {
+          window.$reloadAdminDashboards();
+        }
+      } catch (err) {
+        console.error("Failed to refresh admin data after subscription", err);
+      }
     } catch (error) {
-      showToast('An error occurred while subscribing.', 'error');
-      console.error('Subscription error:', error);
+      showToast("An error occurred while subscribing.", "error");
+      console.error("Subscription error:", error);
     } finally {
       loading = false;
     }
   }
 </script>
-
 
 <footer class="footer">
   <div class="footer__container">
@@ -132,11 +139,12 @@
       <h3 id="footer-newsletter-heading" class="footer__heading">
         Subscribe to our newsletter
       </h3>
-      <form 
-        id="newsletter-form" 
-        class="needs-validation" 
+      <form
+        id="newsletter-form"
+        class="needs-validation"
         novalidate
-        on:submit={handleSubmit}>
+        on:submit={handleSubmit}
+      >
         <div class="mb-3">
           <label for="newsletter-email" class="visually-hidden">
             Email address
@@ -157,11 +165,11 @@
           type="submit"
           class="btn btn-danger w-100"
           id="footerSubscribeBtn"
-          disabled={loading}>
-          {loading ? 'Subscribing...' : 'Subscribe'}
+          disabled={loading}
+        >
+          {loading ? "Subscribing..." : "Subscribe"}
         </button>
       </form>
-
     </section>
   </div>
 </footer>

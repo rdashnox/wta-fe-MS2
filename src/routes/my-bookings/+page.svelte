@@ -4,7 +4,7 @@
   import { accessToken, user } from "$lib/stores/auth";
   import { showToast } from "$lib/stores/toast";
   import { getUserBookings, cancelBooking } from "$lib/services/bookings";
-import EditBookingModal from "$lib/components/EditBookingModal.svelte";
+  import EditBookingModal from "$lib/components/EditBookingModal.svelte";
   import { get } from "svelte/store";
 
   let bookings = [];
@@ -14,13 +14,17 @@ import EditBookingModal from "$lib/components/EditBookingModal.svelte";
   let showEditModal = false;
   let selectedBooking = null;
 
+  $: if ($user === null) {
+    goto("/"); 
+  }
+
   onMount(async () => {
     const token = get(accessToken);
     const currentUser = get(user);
 
     if (!token || !currentUser) {
       showToast("Please log in to view your bookings.", "error");
-      await goto("/login"); // Assuming a login page at /login
+      await goto("/");
       return;
     }
 
@@ -37,7 +41,7 @@ import EditBookingModal from "$lib/components/EditBookingModal.svelte";
 
   // Helper to format dates
   function formatDate(dateString) {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    const options = { year: "numeric", month: "long", day: "numeric" };
     return new Date(dateString).toLocaleDateString(undefined, options);
   }
 
@@ -68,7 +72,9 @@ import EditBookingModal from "$lib/components/EditBookingModal.svelte";
   async function handleBookingUpdate(event) {
     const updatedBooking = event.detail;
     // Find the updated booking in the list and replace it
-    bookings = bookings.map(b => b.id === updatedBooking.id ? updatedBooking : b);
+    bookings = bookings.map((b) =>
+      b.id === updatedBooking.id ? updatedBooking : b,
+    );
     showEditModal = false; // Close modal after update
     // Optionally, re-fetch all bookings if a simple map isn't enough (e.g., if sorting changes)
     // await fetchBookings();
@@ -87,7 +93,8 @@ import EditBookingModal from "$lib/components/EditBookingModal.svelte";
     </div>
   {:else if error}
     <div class="alert alert-danger" role="alert">
-      <strong>Error:</strong> {error}
+      <strong>Error:</strong>
+      {error}
     </div>
   {:else if bookings.length === 0}
     <div class="alert alert-info" role="alert">
@@ -99,20 +106,29 @@ import EditBookingModal from "$lib/components/EditBookingModal.svelte";
       {#each bookings as booking (booking.id)}
         <div class="col">
           <div class="card shadow-sm h-100">
-            <div class="card-body" class:text-muted={booking.status === 'cancelled'}>
-              <h5 class="card-title">{booking.room?.type || 'Unknown Room'}</h5>
-              <h6 class="card-subtitle mb-2 text-muted">Booking ID: {booking.id}</h6>
+            <div
+              class="card-body"
+              class:text-muted={booking.status === "cancelled"}
+            >
+              <h5 class="card-title">{booking.room?.type || "Unknown Room"}</h5>
+              <h6 class="card-subtitle mb-2 text-muted">
+                Booking ID: {booking.id}
+              </h6>
               <p class="card-text">
-                Check-in: <strong>{formatDate(booking.checkInDate)}</strong><br>
-                Check-out: <strong>{formatDate(booking.checkOutDate)}</strong><br>
-                Guests: {booking.adults} Adults, {booking.children} Children<br>
-                Board Type: {booking.boardType}<br>
-                Total Cost: <strong>${booking.totalCost?.toFixed(2) || 'N/A'}</strong><br>
+                Check-in: <strong>{formatDate(booking.checkInDate)}</strong><br
+                />
+                Check-out:
+                <strong>{formatDate(booking.checkOutDate)}</strong><br />
+                Guests: {booking.adults} Adults, {booking.children} Children<br
+                />
+                Board Type: {booking.boardType}<br />
+                Total Cost:
+                <strong>${booking.totalCost?.toFixed(2) || "N/A"}</strong><br />
                 Status:
                 <span
                   class="badge"
-                  class:bg-primary={booking.status === 'active'}
-                  class:bg-secondary={booking.status === 'cancelled'}
+                  class:bg-primary={booking.status === "active"}
+                  class:bg-secondary={booking.status === "cancelled"}
                   >{booking.status}</span
                 >
               </p>
@@ -121,14 +137,14 @@ import EditBookingModal from "$lib/components/EditBookingModal.svelte";
                 <button
                   class="btn btn-sm btn-outline-primary me-2"
                   on:click={() => handleEdit(booking)}
-                  disabled={booking.status === 'cancelled'}
+                  disabled={booking.status === "cancelled"}
                 >
                   Edit
                 </button>
                 <button
                   class="btn btn-sm btn-outline-danger"
                   on:click={() => handleCancel(booking.id)}
-                  disabled={booking.status === 'cancelled'}
+                  disabled={booking.status === "cancelled"}
                 >
                   Cancel
                 </button>

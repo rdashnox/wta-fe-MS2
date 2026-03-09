@@ -1,107 +1,118 @@
 <script>
-  import { API_BASE } from '$lib/api/config.js';
-  import { showToast } from '$lib/stores/toast.js';
-  
+  import { API_BASE } from "$lib/api/config";
+  import { showToast } from "$lib/stores/toast";
+  import { fetchAdminData } from "$lib/utils/admin";
+
   let formElement;
   let errors = {};
   let isSubmitting = false;
-  const emailRegex = /^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/;
+
+  const emailRegex =
+    /^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/;
   const nameRegex = /^[\p{L}]+([-'\s][\p{L}]+)*$/u;
 
   function isContactFormFilled() {
     const title = formElement?.elements.title.value?.trim();
     const firstName = formElement?.elements.firstName.value?.trim();
     const lastName = formElement?.elements.lastName.value?.trim();
-    const email = formElement?.elements['contact-form-email'].value?.trim();
+    const email = formElement?.elements["contact-form-email"].value?.trim();
     const message = formElement?.elements.message.value?.trim();
 
-    return (title !== "" && firstName !== "" && lastName !== "" && email !== "" && message !== "");
+    return (
+      title !== "" &&
+      firstName !== "" &&
+      lastName !== "" &&
+      email !== "" &&
+      message !== ""
+    );
   }
 
   function validateContactFormField(fieldName) {
     const title = formElement?.elements.title.value?.trim();
     const firstName = formElement?.elements.firstName.value?.trim();
     const lastName = formElement?.elements.lastName.value?.trim();
-    const email = formElement?.elements['contact-form-email'].value?.trim();
+    const email = formElement?.elements["contact-form-email"].value?.trim();
     const message = formElement?.elements.message.value?.trim();
 
     switch (fieldName) {
-      case 'title':
+      case "title":
         if (!title) {
-          errors.title = 'Subject is required.';
+          errors.title = "Subject is required.";
         } else if (title.length < 2) {
-          errors.title = 'Subject must be at least 2 characters.';
+          errors.title = "Subject must be at least 2 characters.";
         } else if (title.length > 199) {
-          errors.title = 'Subject must be less than 200 characters.';
+          errors.title = "Subject must be less than 200 characters.";
         } else {
           delete errors.title;
         }
         break;
 
-      case 'firstName':
+      case "firstName":
         if (!firstName) {
-          errors.firstName = 'First name is required.';
+          errors.firstName = "First name is required.";
         } else if (firstName.length > 29) {
-          errors.firstName = 'First name must be less than 30 characters.';
+          errors.firstName = "First name must be less than 30 characters.";
         } else if (!nameRegex.test(firstName)) {
-          errors.firstName = 'First name can include letters, spaces, hyphens( - ), and apostrophes( \' ). No leading or trailing hyphens or apostrophes allowed.';
+          errors.firstName =
+            "First name can include letters, spaces, hyphens( - ), and apostrophes( ' ). No leading or trailing hyphens or apostrophes allowed.";
         } else {
           delete errors.firstName;
         }
         break;
 
-      case 'lastName':
+      case "lastName":
         if (!lastName) {
-          errors.lastName = 'Last name is required.';
+          errors.lastName = "Last name is required.";
         } else if (lastName.length > 19) {
-          errors.lastName = 'Last name must be less than 20 characters.';
+          errors.lastName = "Last name must be less than 20 characters.";
         } else if (!nameRegex.test(lastName)) {
-          errors.lastName = 'Last name can include letters, spaces, hyphens( - ), and apostrophes( \' ). No leading or trailing hyphens or apostrophes allowed.';
+          errors.lastName =
+            "Last name can include letters, spaces, hyphens( - ), and apostrophes( ' ). No leading or trailing hyphens or apostrophes allowed.";
         } else {
           delete errors.lastName;
         }
         break;
 
-      case 'email':
+      case "email":
         if (!email) {
-          errors.email = 'Email is required.';
+          errors.email = "Email is required.";
         } else if (!emailRegex.test(email)) {
-          errors.email = 'Invalid email format.';
+          errors.email = "Invalid email format.";
         } else {
           delete errors.email;
         }
         break;
 
-      case 'message':
+      case "message":
         if (!message) {
-          errors.message = 'Message is required.';
+          errors.message = "Message is required.";
         } else if (message.length < 5) {
-          errors.message = 'Message must be at least 5 characters.';
+          errors.message = "Message must be at least 5 characters.";
         } else if (message.length > 499) {
-          errors.message = 'Message must be less than 500 characters.';
+          errors.message = "Message must be less than 500 characters.";
         } else {
           delete errors.message;
         }
         break;
-    }  
+    }
     errors = errors;
   }
 
   function validateContactForm() {
     errors = {};
 
-    const fields = ['title', 'firstName', 'lastName', 'email', 'message'];
+    const fields = ["title", "firstName", "lastName", "email", "message"];
 
-    fields.forEach(field => validateContactFormField(field));
+    fields.forEach((field) => validateContactFormField(field));
 
     return Object.keys(errors).length === 0;
   }
 
   async function handleContactFormSubmit(e) {
     e.preventDefault();
-    
+
     if (!validateContactForm()) {
-      showToast('Invalid Input.', 'error');
+      showToast("Invalid Input.", "error");
       return;
     }
 
@@ -110,40 +121,43 @@
     try {
       const contactData = {
         name: `${formElement.elements.firstName.value} ${formElement.elements.lastName.value}`,
-        email: formElement.elements['contact-form-email'].value,
+        email: formElement.elements["contact-form-email"].value,
         subject: formElement.elements.title.value,
         message: formElement.elements.message.value,
       };
 
       const response = await fetch(`${API_BASE}/contact`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(contactData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        showToast(errorData.message || 'Failed to send message', 'error');
+        showToast(errorData.message || "Failed to send message", "error");
         isSubmitting = false;
         return;
       }
 
-      showToast('Message sent successfully!', 'success');
+      showToast("Message sent successfully!", "success");
       formElement.reset();
       errors = {};
+
+      try {
+        const data = await fetchAdminData(); // from ./utils/admin
+      } catch (err) {
+        console.error("Failed to refresh admin data after message send", err);
+      }
     } catch (error) {
-      showToast('An error occurred: ' + error.message, 'error');
+      showToast("An error occurred: " + error.message, "error");
     } finally {
       isSubmitting = false;
     }
   }
 </script>
 
-
-
-<!-- Page -->
 <svelte:head>
   <title>Access | Skye Suites</title>
 </svelte:head>
@@ -175,12 +189,11 @@
       <p class="section__intro"><em>Let's get in touch</em></p>
 
       <!-- Contact Form Block -->
-      <form 
-      bind:this={formElement}
-      on:submit={handleContactFormSubmit}
-      novalidate
+      <form
+        bind:this={formElement}
+        on:submit={handleContactFormSubmit}
+        novalidate
       >
-
         <p class="form-text text-muted">
           Fields marked with <span class="text-danger">*</span> are required.
         </p>
@@ -193,7 +206,7 @@
             class:is-invalid={errors.title}
             id="title"
             name="title"
-            on:input={() => validateContactFormField('title')}
+            on:input={() => validateContactFormField("title")}
             required
             autocomplete="off"
           />
@@ -208,7 +221,7 @@
               class:is-invalid={errors.firstName}
               id="first_name"
               name="firstName"
-              on:input={() => validateContactFormField('firstName')}
+              on:input={() => validateContactFormField("firstName")}
               required
               autocomplete="given-name"
             />
@@ -222,7 +235,7 @@
               class:is-invalid={errors.lastName}
               id="last_name"
               name="lastName"
-              on:input={() => validateContactFormField('lastName')}
+              on:input={() => validateContactFormField("lastName")}
               required
               autocomplete="family-name"
             />
@@ -237,7 +250,7 @@
             class:is-invalid={errors.email}
             id="contact-form-email"
             name="email"
-            on:input={() => validateContactFormField('email')}
+            on:input={() => validateContactFormField("email")}
             required
             autocomplete="email"
           />
@@ -251,18 +264,21 @@
             id="message"
             name="message"
             rows="4"
-            on:input={() => validateContactFormField('message')}
+            on:input={() => validateContactFormField("message")}
             required
           ></textarea>
           <div class="invalid-feedback">{errors.message}</div>
         </div>
         <div class="d-flex justify-content-end gap-2">
           <button type="reset" class="btn btn-secondary">Reset</button>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             class="btn btn-danger"
-            disabled={Object.keys(errors).length > 0 || !isContactFormFilled() || isSubmitting}>
-            {isSubmitting ? 'Sending...' : 'SEND'}
+            disabled={Object.keys(errors).length > 0 ||
+              !isContactFormFilled() ||
+              isSubmitting}
+          >
+            {isSubmitting ? "Sending..." : "SEND"}
           </button>
         </div>
       </form>

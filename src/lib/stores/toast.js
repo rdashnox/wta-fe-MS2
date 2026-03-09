@@ -1,9 +1,7 @@
-// Toast store
 import { writable } from "svelte/store";
 
 export const toast = writable(null);
 
-// $lib/stores/toast.js
 export function showToast(message, type = "info") {
   const toastElement = document.getElementById("liveToast");
   const toastMessage = document.getElementById("toastMessage");

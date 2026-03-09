@@ -5,6 +5,9 @@
   import { navigating } from "$app/stores";
   import { fly, fade } from "svelte/transition";
 
+  import { goto } from "$app/navigation";
+  import { user, accessToken } from "$lib/stores/auth";
+
   import TopNav from "$lib/components/TopNav.svelte";
   import Footer from "$lib/components/Footer.svelte";
   import Showcase from "$lib/components/Showcase.svelte";
@@ -13,7 +16,21 @@
 
   $: path = $page.url.pathname;
 
-  // Map route paths to page IDs
+  // List routes that need auth
+  const protectedRoutes = [
+    "/dashboard",
+    "/profile",
+    "/my-bookings",
+    "/oauth-success",
+    "/admin",
+  ];
+
+  // Optional: separately list admin‑only routes
+  const adminRoutes = [
+    "/admin",
+  ];
+
+  // compute page ID
   const pageIds = {
     "/": "index",
     "/suites": "suites",
@@ -22,10 +39,8 @@
     "/experience": "experience",
   };
 
-  // compute page ID
   $: pageId = pageIds[path] ?? "unknown";
 
-  // set data-page-id on body
   afterUpdate(() => {
     document.body.setAttribute("data-page-id", pageId);
   });
@@ -34,6 +49,33 @@
     if (headerMap[path]) return headerMap[path];
     return Object.values(headerMap).find((cfg) => cfg.match?.(path));
   })();
+
+  // === Auth guard logic (client‑only) ===
+  $: {
+    const hasToken = $accessToken;
+    const currentUser = $user;
+
+    const isProtected = protectedRoutes.some((r) => path.startsWith(r));
+    const isAdminRoute = adminRoutes.some((r) => path.startsWith(r));
+
+    // Redirect if protected route but no token
+    if (isProtected && !hasToken && path !== "/") {
+      goto("/");
+    }
+
+    // Redirect if admin route but not admin
+    if (
+      isAdminRoute &&
+      (currentUser === null || currentUser.role !== "admin")
+    ) {
+      goto("/");
+    }
+
+    // Redirect logged‑in user from / to /profile
+    if (path === "/" && hasToken) {
+      goto("/");
+    }
+  }
 </script>
 
 {#if $navigating}
@@ -54,6 +96,7 @@
 </header>
 
 <Toast />
+
 <div class="flex-fill">
   <slot />
 </div>
